@@ -36,7 +36,8 @@ A Retrieval-Augmented Generation (RAG) system that processes Myanmar (Burmese) a
 ### 1. Clone and Setup
 
 ```bash
-cd D:\Projects_And_Learning\AI\myanmar-ocr\rag
+git clone https://github.com/yanmyoaung2004/myanmar-english-bilingual-rag-pipeline.git
+cd myanmar-english-bilingual-rag-pipeline
 ```
 
 ### 2. Create Virtual Environment
@@ -56,6 +57,7 @@ python -m venv .venv
 ### 3. Install Dependencies
 
 All dependencies are already installed from the previous setup:
+
 - langchain, langchain-cohere, langchain-qdrant
 - qdrant-client, pypdf, cohere, tokenizers
 
@@ -84,6 +86,7 @@ docker run -p 6333:6333 -p 6334:6334 \
 **Option B: Using Python Client (In-Memory)**
 
 The code automatically connects to Qdrant. If Qdrant is not running, the pipeline will fail. You can either:
+
 - Start Qdrant with Docker (Option A)
 - Use Qdrant Cloud (https://qdrant.tech/cloud/)
 
@@ -101,6 +104,7 @@ QDRANT_URL=http://localhost:6333
 ```
 
 To get your Cohere API Key:
+
 1. Go to https://cohere.com/
 2. Sign up (free tier available)
 3. Create an API key in your dashboard
@@ -183,27 +187,32 @@ Answer: Based on the provided documents, the main topic is...
 ## How It Works
 
 ### 1. **Document Ingestion & Sanitization**
+
 - Loads PDF files from `data/` directory
 - Removes zero-width characters that inflate token count
 - Standardizes Burmese punctuation (။ and ၊)
 - Removes excessive whitespace
 
 ### 2. **Tokenization & Chunking**
+
 - Uses Cohere's tokenizer to measure token count accurately
 - Splits documents into 350-token chunks with 35-token overlap
 - Respects Burmese syllable boundaries (။ and ၊)
 
 ### 3. **Embedding & Vectorization**
+
 - Uses Cohere Embed v4 model (1536 dimensions)
 - Generates dense vector representations for semantic search
 - Stores vectors in Qdrant with multilingual BM25 indexing
 
 ### 4. **Hybrid Retrieval**
+
 - **Dense Search**: Semantic similarity using vector embeddings
 - **Sparse Search**: Exact keyword matching using BM25
 - Returns top 5 most relevant context windows
 
 ### 5. **Generation**
+
 - Uses Cohere's Command R+ LLM
 - Enforces language matching (Burmese queries get Burmese responses)
 - Includes guardrails to prevent hallucination
@@ -227,20 +236,24 @@ print(result["output"])
 ## Troubleshooting
 
 ### Error: "COHERE_API_KEY not found"
+
 - Make sure `.env` file exists in project root
 - Verify the API key is set correctly
 - The key should start with `co-`
 
 ### Error: "Could not connect to Qdrant"
+
 - Start Qdrant with Docker: `docker run -p 6333:6333 qdrant/qdrant`
 - Or change `QDRANT_URL` in `.env` to use Qdrant Cloud
 
 ### Error: "No PDF files found in data/"
+
 - Create the `data/` directory
 - Add at least one PDF file with Myanmar or English text
 - Re-run the pipeline
 
 ### Error: "ModuleNotFoundError"
+
 - Install missing dependencies: `pip install -r requirements.txt`
 - Or use: `uv pip install langchain langchain-cohere langchain-qdrant qdrant-client`
 
@@ -304,11 +317,11 @@ Before running, ensure:
 - [Cohere API Documentation](https://docs.cohere.com/)
 - [Qdrant Documentation](https://qdrant.tech/documentation/)
 - [LangChain Documentation](https://python.langchain.com/)
-- [Plan Documentation](./plan.md) - Technical architecture details
 
 ## Support
 
 For issues or questions:
+
 1. Check SETUP.md for detailed troubleshooting
 2. Review AGENTS.md for project conventions
 3. Consult plan.md for architecture details
