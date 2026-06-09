@@ -1,327 +1,181 @@
 # Myanmar-English Bilingual RAG Pipeline
 
-A Retrieval-Augmented Generation (RAG) system that processes Myanmar (Burmese) and English text using advanced NLP techniques.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
+[![Cohere](https://img.shields.io/badge/powered%20by-Cohere-3952FF.svg)](https://cohere.com)
+[![Qdrant](https://img.shields.io/badge/vector%20db-Qdrant-red.svg)](https://qdrant.tech)
+[![LangChain](https://img.shields.io/badge/%F0%9F%A7%A1LangChain-informational)](https://python.langchain.com)
 
-## Architecture Overview
+A production-ready Retrieval-Augmented Generation (RAG) system designed for **Myanmar (Burmese)** and **English** bilingual document understanding. Built with Cohere embeddings, Qdrant vector storage, and LangChain orchestration.
+
+---
+
+## Features
+
+- **Bilingual by Design** — Detects query language and responds in the same script (Myanmar Unicode or English)
+- **Burmese-Aware Chunking** — Respects Myanmar punctuation (။၊) as natural split boundaries
+- **Hybrid Search** — Dense semantic vectors + BM25 sparse keyword matching for maximum recall
+- **Unicode Sanitization** — Strips zero-width characters that inflate token counts
+- **Interactive Query Mode** — Ask questions in either language via CLI
+- **Custom LLM Support** — Bring your own OpenAI-compatible endpoint
+
+## Architecture
 
 ```
-[DOCUMENT INGESTION]
-  PDFs / Docs / Text → Regex Unicode Sanitizer → Token-Aware Recursive Chunker (Max 350 Cohere Tokens)
-                                                              │
-                                                              ▼
-[VECTORIZATION & STORAGE]
-  LangChain Vector Store → Cohere Embed v4 (1536-dim) → Qdrant (Dense + BM25)
-                                                              │
-                                                              ▼
-[RETRIEVAL RUNTIME]
-  User Query → Multi-Script Encoding Validation → Parallel Retrieval (Dense + Sparse BM25)
-                                                              │
-                                                              ▼
-[CONTEXT COMPRESSION]
-  Reciprocal Rank Fusion (RRF) → Cohere Rerank v4 → Top 5 Validated Context Windows
-                                                              │
-                                                              ▼
-[GENERATION]
-  Command R+ LLM → Cross-Script Guardrail Prompt → Output (Matching Query Script)
+                    ┌──────────────────────────────────────────┐
+                    │          DOCUMENT INGESTION              │
+                    │  PDF/Docs → Unicode Sanitizer → Chunker  │
+                    │            (350-token windows)           │
+                    └────────────────┬─────────────────────────┘
+                                     │
+                    ┌────────────────▼─────────────────────────┐
+                    │       VECTORIZATION & STORAGE            │
+                    │  Cohere Embed v4 (1536-dim) → Qdrant     │
+                    │         (Dense + BM25 Index)             │
+                    └────────────────┬─────────────────────────┘
+                                     │
+                    ┌────────────────▼─────────────────────────┐
+                    │          RETRIEVAL RUNTIME               │
+                    │  Query → Hybrid Search → Top-5 Contexts  │
+                    └────────────────┬─────────────────────────┘
+                                     │
+                    ┌────────────────▼─────────────────────────┐
+                    │              GENERATION                  │
+                    │  LLM → Cross-Script Guardrail → Output   │
+                    │    (matches query script)                │
+                    └──────────────────────────────────────────┘
 ```
 
-## Prerequisites
+## Quick Start
 
-- **Python 3.13+** (via uv)
-- **Docker** (optional, for Qdrant)
-- **Cohere API Key** (free tier available at https://cohere.com)
+### Prerequisites
 
-## Installation
+- Python 3.13+ (via `uv`)
+- Docker (for Qdrant)
+- [Cohere API key](https://cohere.com) (free tier available)
 
-### 1. Clone and Setup
+### Setup
 
 ```bash
+# 1. Clone
 git clone https://github.com/yanmyoaung2004/myanmar-english-bilingual-rag-pipeline.git
-cd myanmar-english-bilingual-rag-pipeline
-```
+cd myanmar-english-bilingual-rag-pipeline/rag
 
-### 2. Create Virtual Environment
-
-```bash
-# Using uv (recommended)
+# 2. Create venv & install
 uv venv .venv
-
-# Activate on Windows
 .venv\Scripts\activate
+uv pip install -r requirements.txt   # or `uv sync`
 
-# Or manually with Python
-python -m venv .venv
-.venv\Scripts\activate
-```
+# 3. Configure
+cp .env.example .env
+# Edit .env → set COHERE_API_KEY
 
-### 3. Install Dependencies
+# 4. Start Qdrant (Docker)
+docker run -p 6333:6333 -p 6334:6334 -v ${PWD}/qdrant_storage:/qdrant/storage qdrant/qdrant
 
-All dependencies are already installed from the previous setup:
-
-- langchain, langchain-cohere, langchain-qdrant
-- qdrant-client, pypdf, cohere, tokenizers
-
-Additional dependencies for this version:
-
-```bash
-pip install python-dotenv langchain-text-splitters
-```
-
-Or using uv:
-
-```bash
-uv pip install python-dotenv langchain-text-splitters
-```
-
-### 4. Setup Qdrant Database
-
-**Option A: Using Docker (Recommended)**
-
-```bash
-docker run -p 6333:6333 -p 6334:6334 \
-    -v $(pwd)/qdrant_storage:/qdrant/storage \
-    qdrant/qdrant
-```
-
-**Option B: Using Python Client (In-Memory)**
-
-The code automatically connects to Qdrant. If Qdrant is not running, the pipeline will fail. You can either:
-
-- Start Qdrant with Docker (Option A)
-- Use Qdrant Cloud (https://qdrant.tech/cloud/)
-
-### 5. Setup Environment Variables
-
-Create a `.env` file in the project root:
-
-```bash
-# Copy from example
-copy .env.example .env
-
-# Edit .env with your Cohere API Key
-COHERE_API_KEY=your_actual_api_key_here
-QDRANT_URL=http://localhost:6333
-```
-
-To get your Cohere API Key:
-
-1. Go to https://cohere.com/
-2. Sign up (free tier available)
-3. Create an API key in your dashboard
-4. Add it to `.env`
-
-### 6. Prepare Your Data
-
-Create a `data/` directory and add PDF files:
-
-```
-project_root/
-├── data/
-│   ├── myanmar_text.pdf
-│   ├── english_text.pdf
-│   └── bilingual_content.pdf
-├── main.py
-├── .env
-└── ...
-```
-
-## Running the Pipeline
-
-### Start Qdrant (if using Docker)
-
-In a separate terminal:
-
-```bash
-docker run -p 6333:6333 -p 6334:6334 \
-    -v $(pwd)/qdrant_storage:/qdrant/storage \
-    qdrant/qdrant
-```
-
-### Run the Pipeline
-
-```bash
-# Using uv
+# 5. Add PDFs to data/ and run
 uv run python main.py
-
-# Or with activated venv
-python main.py
 ```
 
-## Expected Output
-
-```
-============================================================
-Myanmar-English Bilingual RAG Pipeline
-============================================================
-
-1. Initializing Cohere Embeddings (v4)...
-✓ Embeddings engine initialized
-
-2. Initializing Qdrant vector database...
-✓ Collection 'myanmar_english_knowledge_corp' already exists
-
-3. Creating vector store...
-✓ Vector store created
-
-4. Loading and processing documents...
-✓ Loaded 10 pages from data/sample.pdf
-
-5. Chunking and embedding documents...
-✓ Created 45 chunks from 10 documents
-✓ Documents added to vector store
-
-6. Setting up RAG pipeline...
-✓ RAG pipeline created successfully
-
-7. Testing RAG pipeline...
-
-Query: What is the main topic of the documents?
-------------------------------------------------------------
-Answer: Based on the provided documents, the main topic is...
-
-============================================================
-✓ RAG Pipeline setup complete!
-============================================================
-```
+> **Windows users**: Use `.venv\Scripts\activate` and `%PWD%` or absolute paths for Docker volumes.
 
 ## How It Works
 
-### 1. **Document Ingestion & Sanitization**
+### 1. Document Ingestion & Sanitization
+PDFs loaded from `data/` are passed through a Unicode sanitizer that removes zero-width joiners, normalizes Burmese punctuation (။, ၊), and collapses excessive whitespace — preventing token inflation before embedding.
 
-- Loads PDF files from `data/` directory
-- Removes zero-width characters that inflate token count
-- Standardizes Burmese punctuation (။ and ၊)
-- Removes excessive whitespace
+### 2. Tokenization & Chunking
+Uses Cohere's tokenizer to count exact tokens for the `embed-multilingual-v3.0` model. Documents are split into **350-token chunks** with **35-token overlap**, respecting sentence and Burmese punctuation boundaries.
 
-### 2. **Tokenization & Chunking**
+### 3. Embedding & Vector Storage
+Each chunk is embedded into a **1536-dimensional vector** via Cohere Embed v4 and stored in **Qdrant** alongside a multilingual BM25 full-text index for hybrid retrieval.
 
-- Uses Cohere's tokenizer to measure token count accurately
-- Splits documents into 350-token chunks with 35-token overlap
-- Respects Burmese syllable boundaries (။ and ၊)
+### 4. Retrieval
+Queries execute both:
+- **Dense search** — semantic similarity over vector embeddings
+- **Sparse search** — exact BM25 keyword matching
 
-### 3. **Embedding & Vectorization**
+Results are combined and the top 5 contexts are passed to the LLM.
 
-- Uses Cohere Embed v4 model (1536 dimensions)
-- Generates dense vector representations for semantic search
-- Stores vectors in Qdrant with multilingual BM25 indexing
+### 5. Generation
+The LLM (default: OpenAI-compatible endpoint, configurable for Cohere Command R+) generates a response in the **same language as the query** — Myanmar Unicode queries produce Myanmar responses, English queries produce English responses.
 
-### 4. **Hybrid Retrieval**
-
-- **Dense Search**: Semantic similarity using vector embeddings
-- **Sparse Search**: Exact keyword matching using BM25
-- Returns top 5 most relevant context windows
-
-### 5. **Generation**
-
-- Uses Cohere's Command R+ LLM
-- Enforces language matching (Burmese queries get Burmese responses)
-- Includes guardrails to prevent hallucination
-
-## Querying the System
-
-After the pipeline is running, you can query it with:
+## Query Examples
 
 ```python
-# English query
-query = "What are the main findings?"
-result = rag_pipeline.invoke({"input": query})
-print(result["output"])
+# English
+result = rag_pipeline.invoke("What are the main findings?")
+print(result.content)
 
-# Myanmar query
-query = "အဓိက ရလဒ်များ သည် အဘယ်နည်း။"
-result = rag_pipeline.invoke({"input": query})
-print(result["output"])
+# Myanmar
+result = rag_pipeline.invoke("အဓိက ရလဒ်များ သည် အဘယ်နည်း။")
+print(result.content)
+```
+
+The pipeline also includes an **interactive CLI mode** where you can type questions conversationally until you enter `exit`.
+
+## Configuration
+
+| Variable | Default | Description |
+|---|---|---|
+| `COHERE_API_KEY` | — | Cohere API key for embeddings |
+| `QDRANT_URL` | `http://localhost:6333` | Qdrant server URL |
+| `COLLECTION_NAME` | `myanmar_english_knowledge_corp` | Qdrant collection name |
+| `LLM_API_BASE` | `http://localhost:8000` | Custom LLM endpoint |
+| `LLM_API_KEY` | `sk-default-key` | Custom LLM auth key |
+| `LLM_MODEL` | `gpt-3.5-turbo` | Custom LLM model name |
+| `USE_CUSTOM_LLM` | `false` | Toggle custom LLM |
+
+### Chunking Parameters (in `main.py`)
+
+| Parameter | Value | Description |
+|---|---|---|
+| `chunk_size` | 350 | Max tokens per chunk |
+| `chunk_overlap` | 35 | Token overlap between chunks (10%) |
+| `separators` | `["\n\n", "\n", "။", "၊", " ", ""]` | Split priority (Burmese-aware) |
+
+## Project Layout
+
+```
+rag/
+├── main.py              # Pipeline entrypoint
+├── pyproject.toml       # Project metadata & dependencies
+├── AGENTS.md            # Agent/IDE instructions
+├── .env.example         # Environment template
+├── data/                # PDF documents (create + populate)
+├── docs/
+│   └── EXECUTION_GUIDE.md   # Detailed walkthrough
+├── qdrant_storage/      # Qdrant data (Docker volume)
+└── .venv/               # Python virtual environment
 ```
 
 ## Troubleshooting
 
-### Error: "COHERE_API_KEY not found"
+| Error | Likely Cause | Fix |
+|---|---|---|
+| `COHERE_API_KEY not found` | Missing `.env` or invalid key | Create `.env` from `.env.example` with a valid `co-*` key |
+| `Could not connect to Qdrant` | Qdrant not running | `docker run -p 6333:6333 qdrant/qdrant` |
+| `No PDF files found in data/` | Empty `data/` | Add PDFs to `data/` |
+| `Connection refused` | LLM endpoint down | Start your LLM server or set `USE_CUSTOM_LLM=false` |
+| `ModuleNotFoundError` | Missing deps | `uv pip install langchain langchain-cohere langchain-qdrant qdrant-client` |
 
-- Make sure `.env` file exists in project root
-- Verify the API key is set correctly
-- The key should start with `co-`
+## Roadmap
 
-### Error: "Could not connect to Qdrant"
+- [ ] **Web UI** — Streamlit or FastAPI frontend for uploads & queries
+- [ ] **Zawgyi→Unicode** — Automatic Zawgyi detection and conversion in the ingestion pipeline
+- [ ] **Benchmarking** — CER/ROUGE evaluation suite against reference corpora
+- [ ] **PDF Batch Ingestion** — Watch folder for automatic processing
+- [ ] **Docker Compose** — One-command startup for the full stack
 
-- Start Qdrant with Docker: `docker run -p 6333:6333 qdrant/qdrant`
-- Or change `QDRANT_URL` in `.env` to use Qdrant Cloud
+## Tech Stack
 
-### Error: "No PDF files found in data/"
+- **Embeddings**: [Cohere Embed v4](https://docs.cohere.com/docs/cohere-embed) (multilingual-v3.0, 1536-dim)
+- **Vector Store**: [Qdrant](https://qdrant.tech) (dense + BM25 indexing)
+- **Orchestration**: [LangChain](https://python.langchain.com)
+- **LLM**: OpenAI-compatible endpoints (Cohere Command R+, GPT, Llama, etc.)
+- **Documents**: PyPDFLoader via `pypdf`
 
-- Create the `data/` directory
-- Add at least one PDF file with Myanmar or English text
-- Re-run the pipeline
+## License
 
-### Error: "ModuleNotFoundError"
-
-- Install missing dependencies: `pip install -r requirements.txt`
-- Or use: `uv pip install langchain langchain-cohere langchain-qdrant qdrant-client`
-
-## Project Structure
-
-```
-rag/
-├── main.py              # Main RAG pipeline
-├── AGENTS.md            # Agent instructions for OpenCode
-├── SETUP.md             # Detailed setup guide
-├── README.md            # This file
-├── plan.md              # Architecture blueprint
-├── .env.example         # Environment template
-├── .env                 # Environment variables (create from .example)
-├── data/                # PDF documents go here
-├── qdrant_storage/      # Qdrant persistent storage (created by Docker)
-└── .venv/               # Python virtual environment
-```
-
-## Configuration
-
-Key settings in `main.py`:
-
-```python
-COHERE_API_KEY = os.getenv("COHERE_API_KEY")
-QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
-COLLECTION_NAME = "myanmar_english_knowledge_corp"
-```
-
-Text splitting configuration:
-
-```python
-chunk_size=350              # Max tokens per chunk
-chunk_overlap=35            # 10% overlap between chunks
-separators=["\n\n", "\n", "။", "၊", " ", ""]  # Split points (Burmese-aware)
-```
-
-## Validation Checklist
-
-Before running, ensure:
-
-- [ ] Python 3.13+ installed
-- [ ] Virtual environment activated
-- [ ] Dependencies installed: `pip install -r requirements.txt`
-- [ ] `.env` file created with COHERE_API_KEY
-- [ ] Qdrant running (Docker or Cloud)
-- [ ] `data/` directory created
-- [ ] At least one PDF file in `data/`
-- [ ] Network connection (for Cohere API calls)
-
-## Next Steps
-
-1. **Add More Documents**: Place additional PDFs in `data/`
-2. **Fine-tune Parameters**: Adjust chunk_size, overlap, or model settings
-3. **Implement Web UI**: Create a Streamlit or FastAPI interface
-4. **Deploy**: Push to production with proper monitoring
-5. **Evaluate**: Test quality with benchmark datasets
-
-## References
-
-- [Cohere API Documentation](https://docs.cohere.com/)
-- [Qdrant Documentation](https://qdrant.tech/documentation/)
-- [LangChain Documentation](https://python.langchain.com/)
-
-## Support
-
-For issues or questions:
-
-1. Check SETUP.md for detailed troubleshooting
-2. Review AGENTS.md for project conventions
-3. Consult plan.md for architecture details
+MIT © [Yan Myo Aung](https://github.com/yanmyoaung2004)
