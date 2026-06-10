@@ -83,22 +83,28 @@ uv run python main.py
 ## How It Works
 
 ### 1. Document Ingestion & Sanitization
+
 PDFs loaded from `data/` are passed through a Unicode sanitizer that removes zero-width joiners, normalizes Burmese punctuation (။, ၊), and collapses excessive whitespace — preventing token inflation before embedding.
 
 ### 2. Tokenization & Chunking
+
 Uses Cohere's tokenizer to count exact tokens for the `embed-multilingual-v3.0` model. Documents are split into **350-token chunks** with **35-token overlap**, respecting sentence and Burmese punctuation boundaries.
 
 ### 3. Embedding & Vector Storage
+
 Each chunk is embedded into a **1536-dimensional vector** via Cohere Embed v4 and stored in **Qdrant** alongside a multilingual BM25 full-text index for hybrid retrieval.
 
 ### 4. Retrieval
+
 Queries execute both:
+
 - **Dense search** — semantic similarity over vector embeddings
 - **Sparse search** — exact BM25 keyword matching
 
 Results are combined and the top 5 contexts are passed to the LLM.
 
 ### 5. Generation
+
 The LLM (default: OpenAI-compatible endpoint, configurable for Cohere Command R+) generates a response in the **same language as the query** — Myanmar Unicode queries produce Myanmar responses, English queries produce English responses.
 
 ## Query Examples
@@ -117,23 +123,23 @@ The pipeline also includes an **interactive CLI mode** where you can type questi
 
 ## Configuration
 
-| Variable | Default | Description |
-|---|---|---|
-| `COHERE_API_KEY` | — | Cohere API key for embeddings |
-| `QDRANT_URL` | `http://localhost:6333` | Qdrant server URL |
-| `COLLECTION_NAME` | `myanmar_english_knowledge_corp` | Qdrant collection name |
-| `LLM_API_BASE` | `http://localhost:8000` | Custom LLM endpoint |
-| `LLM_API_KEY` | `sk-default-key` | Custom LLM auth key |
-| `LLM_MODEL` | `gpt-3.5-turbo` | Custom LLM model name |
-| `USE_CUSTOM_LLM` | `false` | Toggle custom LLM |
+| Variable          | Default                          | Description                   |
+| ----------------- | -------------------------------- | ----------------------------- |
+| `COHERE_API_KEY`  | —                                | Cohere API key for embeddings |
+| `QDRANT_URL`      | `http://localhost:6333`          | Qdrant server URL             |
+| `COLLECTION_NAME` | `myanmar_english_knowledge_corp` | Qdrant collection name        |
+| `LLM_API_BASE`    | `http://localhost:8000`          | Custom LLM endpoint           |
+| `LLM_API_KEY`     | `sk-default-key`                 | Custom LLM auth key           |
+| `LLM_MODEL`       | `gpt-3.5-turbo`                  | Custom LLM model name         |
+| `USE_CUSTOM_LLM`  | `false`                          | Toggle custom LLM             |
 
 ### Chunking Parameters (in `main.py`)
 
-| Parameter | Value | Description |
-|---|---|---|
-| `chunk_size` | 350 | Max tokens per chunk |
-| `chunk_overlap` | 35 | Token overlap between chunks (10%) |
-| `separators` | `["\n\n", "\n", "။", "၊", " ", ""]` | Split priority (Burmese-aware) |
+| Parameter       | Value                               | Description                        |
+| --------------- | ----------------------------------- | ---------------------------------- |
+| `chunk_size`    | 350                                 | Max tokens per chunk               |
+| `chunk_overlap` | 35                                  | Token overlap between chunks (10%) |
+| `separators`    | `["\n\n", "\n", "။", "၊", " ", ""]` | Split priority (Burmese-aware)     |
 
 ## Project Layout
 
@@ -152,21 +158,13 @@ rag/
 
 ## Troubleshooting
 
-| Error | Likely Cause | Fix |
-|---|---|---|
-| `COHERE_API_KEY not found` | Missing `.env` or invalid key | Create `.env` from `.env.example` with a valid `co-*` key |
-| `Could not connect to Qdrant` | Qdrant not running | `docker run -p 6333:6333 qdrant/qdrant` |
-| `No PDF files found in data/` | Empty `data/` | Add PDFs to `data/` |
-| `Connection refused` | LLM endpoint down | Start your LLM server or set `USE_CUSTOM_LLM=false` |
-| `ModuleNotFoundError` | Missing deps | `uv pip install langchain langchain-cohere langchain-qdrant qdrant-client` |
-
-## Roadmap
-
-- [ ] **Web UI** — Streamlit or FastAPI frontend for uploads & queries
-- [ ] **Zawgyi→Unicode** — Automatic Zawgyi detection and conversion in the ingestion pipeline
-- [ ] **Benchmarking** — CER/ROUGE evaluation suite against reference corpora
-- [ ] **PDF Batch Ingestion** — Watch folder for automatic processing
-- [ ] **Docker Compose** — One-command startup for the full stack
+| Error                         | Likely Cause                  | Fix                                                                        |
+| ----------------------------- | ----------------------------- | -------------------------------------------------------------------------- |
+| `COHERE_API_KEY not found`    | Missing `.env` or invalid key | Create `.env` from `.env.example` with a valid `co-*` key                  |
+| `Could not connect to Qdrant` | Qdrant not running            | `docker run -p 6333:6333 qdrant/qdrant`                                    |
+| `No PDF files found in data/` | Empty `data/`                 | Add PDFs to `data/`                                                        |
+| `Connection refused`          | LLM endpoint down             | Start your LLM server or set `USE_CUSTOM_LLM=false`                        |
+| `ModuleNotFoundError`         | Missing deps                  | `uv pip install langchain langchain-cohere langchain-qdrant qdrant-client` |
 
 ## Tech Stack
 

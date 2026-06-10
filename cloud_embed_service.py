@@ -148,20 +148,20 @@ def main():
     if args.model:
         _load_sentence_model(args.model)
 
-    print(f"\n{'='*60}")
-    print(f"  Cloud Embedding Service")
-    print(f"  Listening on {args.host}:{args.port}")
-    print(f"{'='*60}")
-    print(f"  Supported backends:")
-    print(f"    sentence-transformers/...  → local GPU")
-    print(f"    cohere/...                 → Cohere API")
-    print(f"    openai/...                 → OpenAI API")
+    print("\n{'='*60}")
+    print("  Cloud Embedding Service")
+    print("  Listening on {args.host}:{args.port}")
+    print("{'='*60}")
+    print("  Supported backends:")
+    print("    sentence-transformers/...  → local GPU")
+    print("    cohere/...                 → Cohere API")
+    print("    openai/...                 → OpenAI API")
     if args.model:
-        print(f"  Preloaded: {args.model}")
-    print(f"\n  POST /embed  — compute embeddings")
-    print(f"  GET  /health — health check")
-    print(f"  GET  /models — list loaded models")
-    print(f"{'='*60}\n")
+        print("  Preloaded: {args.model}")
+    print("\n  POST /embed  — compute embeddings")
+    print("  GET  /health — health check")
+    print("  GET  /models — list loaded models")
+    print("{'='*60}\n")
 
     uvicorn.run(app, host=args.host, port=args.port)
 
