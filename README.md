@@ -166,6 +166,14 @@ rag/
 | `Connection refused`          | LLM endpoint down             | Start your LLM server or set `USE_CUSTOM_LLM=false`                        |
 | `ModuleNotFoundError`         | Missing deps                  | `uv pip install langchain langchain-cohere langchain-qdrant qdrant-client` |
 
+## Roadmap
+
+- [ ] **Web UI** — Streamlit or FastAPI frontend for uploads & queries
+- [ ] **Zawgyi→Unicode** — Automatic Zawgyi detection and conversion in the ingestion pipeline
+- [ ] **Benchmarking** — CER/ROUGE evaluation suite against reference corpora
+- [ ] **PDF Batch Ingestion** — Watch folder for automatic processing
+- [ ] **Docker Compose** — One-command startup for the full stack
+
 ## Tech Stack
 
 - **Embeddings**: [Cohere Embed v4](https://docs.cohere.com/docs/cohere-embed) (multilingual-v3.0, 1536-dim)

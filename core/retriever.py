@@ -10,10 +10,23 @@ from core.config import settings
 from core.embeddings import get_embedding_strategy, EmbeddingStrategy
 
 
+def _ensure_no_proxy_for_localhost():
+    no_proxy = os.environ.get("NO_PROXY", "")
+    localhost_entries = {"localhost", "127.0.0.1"}
+    existing = {s.strip() for s in no_proxy.replace(";", ",").split(",") if s.strip()}
+    missing = localhost_entries - existing
+    if missing:
+        separator = ";" if ";" in no_proxy else ","
+        no_proxy_parts = [no_proxy] if no_proxy else []
+        os.environ["NO_PROXY"] = separator.join(no_proxy_parts + sorted(missing))
+
+
 def get_qdrant_client() -> QdrantClient:
     in_memory = os.getenv("QDRANT_IN_MEMORY", "").lower() == "true"
     if in_memory:
         return QdrantClient(":memory:")
+
+    _ensure_no_proxy_for_localhost()
 
     kwargs = {"url": settings.qdrant_url}
     if settings.qdrant_api_key:

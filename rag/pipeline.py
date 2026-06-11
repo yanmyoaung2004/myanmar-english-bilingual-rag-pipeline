@@ -7,7 +7,6 @@ from langchain_core.runnables import RunnablePassthrough
 from core.config import settings
 from core.embeddings import EmbeddingStrategy
 from core.retriever import get_retriever
-from core.chunker import BaseChunker, get_chunker
 from rag.prompts import BILINGUAL_PROMPT
 
 

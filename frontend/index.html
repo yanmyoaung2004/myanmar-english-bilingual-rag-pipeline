@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Myanmar RAG Pipeline</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div id="toast-container"></div>
+
+  <header>
+    <h1>Myanmar–English Bilingual RAG</h1>
+    <span id="status-badge" class="badge">disconnected</span>
+  </header>
+
+  <main class="grid">
+    <!-- QUERY SECTION -->
+    <section class="card" id="query-section">
+      <h2>Ask a Question</h2>
+      <form id="query-form">
+        <textarea id="query-input" rows="3" placeholder="Type your question in Myanmar or English…"></textarea>
+        <button type="submit" id="query-btn">
+          <span class="btn-text">Ask</span>
+          <span class="spinner hidden"></span>
+        </button>
+      </form>
+      <div id="query-result" class="hidden">
+        <h3>Answer</h3>
+        <p id="answer-text"></p>
+      </div>
+    </section>
+
+    <!-- UPLOAD SECTION -->
+    <section class="card" id="upload-section">
+      <h2>Upload Document</h2>
+      <form id="upload-form">
+        <div id="drop-zone">
+          <p>Drag & drop a PDF here, or click to browse</p>
+          <input type="file" id="file-input" accept=".pdf,.txt" hidden>
+        </div>
+        <button type="submit" id="upload-btn" disabled>
+          <span class="btn-text">Upload & Index</span>
+          <span class="spinner hidden"></span>
+        </button>
+      </form>
+      <div id="upload-result" class="hidden"></div>
+    </section>
+
+    <!-- EXPORT SECTION -->
+    <section class="card" id="export-section">
+      <h2>Export Corpus</h2>
+      <p class="muted">Export indexed documents as a versioned JSON corpus.</p>
+      <div class="export-controls">
+        <input type="text" id="export-version" value="v0.1.0" placeholder="version tag">
+        <button id="export-btn">
+          <span class="btn-text">Export</span>
+          <span class="spinner hidden"></span>
+        </button>
+      </div>
+      <div id="export-result" class="hidden"></div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
